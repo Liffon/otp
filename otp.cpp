@@ -11,7 +11,7 @@ typedef uint64_t u64;
 struct data
 {
     u64 length;
-    u8 bytes[];
+    u8 bytes[1]; // NOTE: this is supposed to be longer than 1 byte!
 };
 
 data* allocateData(size_t size, bool clear = false)
