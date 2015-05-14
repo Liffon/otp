@@ -88,13 +88,34 @@ data* readFileEnd(const char* filename, size_t size)
     }
 }
 
+data* xorData(data* key, data* message, data* destination = 0)
+{
+    assert(key->length == message->length);
+    if(!destination)
+    {
+        destination = allocateData(key->length);
+    }
+
+    for(u64 i = 0;
+        i < key->length;
+        ++i)
+    {
+        destination->bytes[i] = key->bytes[i] ^ message->bytes[i];
+    }
+
+    return destination;
+}
+
 int main()
 {
     data* message = readFile("message.txt");
     data* key = readFileEnd("secret.key", message->length);
+    data* result;
     if(key)
     {
         printf("I have both plaintext and a key. Let the encrypting commence!\n");
+
+        result = xorData(key, message);
     }
     else
     {
