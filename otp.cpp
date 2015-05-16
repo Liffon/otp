@@ -37,6 +37,24 @@ data* allocateData(size_t size, bool clear = false)
     return result;
 }
 
+size_t fileSize(FILE* stream)
+{
+    assert(!isatty(fileno(stream)));
+
+    struct stat buffer = {};
+    int result = fstat(fileno(stream), &buffer);
+
+    if(result != -1)
+    {
+        return buffer.st_size;
+    }
+    else
+    {
+        assert(result != -1);
+        return -1;
+    }
+}
+
 size_t fileSize(const char* filename)
 {
     struct stat buffer = {};
@@ -51,6 +69,46 @@ size_t fileSize(const char* filename)
         assert(result != -1);
         return -1;
     }
+}
+
+#define CHUNKSIZE 8
+
+data* readUntilEof(FILE* stream)
+{
+    size_t toRead = 0;
+    bool dynamicSize = false;
+    if(!isatty(fileno(stream)))
+    {
+        toRead = fileSize(stream);
+    }
+    else
+    {
+        toRead = CHUNKSIZE; // try with 1 KB to start with
+        dynamicSize = true;
+    }
+
+    data* result = allocateData(toRead);
+    size_t bytes_read = 0;
+    size_t bytes_read_in_chunk;
+
+    while(!feof(stream))
+    {
+        bytes_read_in_chunk = fread(&result->bytes + bytes_read, 1, toRead, stream);
+        bytes_read += bytes_read_in_chunk;
+
+        if(bytes_read_in_chunk == CHUNKSIZE && !feof(stream)) // needs more size!
+        {
+            result = (data*)realloc(result, sizeof(u64) + bytes_read + CHUNKSIZE);
+        }
+        else if(ferror(stream))
+        {
+            free(result);
+            return 0;
+        }
+    }
+
+    result->length = bytes_read;
+    return result;
 }
 
 data* readFile(const char* filename)
@@ -68,7 +126,6 @@ data* readFile(const char* filename)
 data* readFileEnd(const char* filename, size_t size)
 {
     size_t filesize = fileSize(filename);
-    printf("Filesize is %d bytes (want at least %d bytes).\n", filesize, size);
 
     if(filesize >= size)
     {
@@ -106,21 +163,60 @@ data* xorData(data* key, data* message, data* destination = 0)
     return destination;
 }
 
-int main()
+void describeUsage()
 {
-    data* message = readFile("message.txt");
+    printf("Usage: otp <keyfile> [inputfile [outputfile]]\n\n");
+    printf("Data will be removed from the keyfile equal in length\n");
+    printf("to the inputfile.\n");
+}
+
+int main(int argc, const char** argv)
+{
+    FILE* keyfile = 0;
+    FILE* inputfile = stdin;
+    FILE* outputfile = stdout;
+
+    if(argc == 2) // assume only keyfile provided
+    {
+        keyfile = fopen(argv[1], "r+b");
+    }
+    else if(argc == 3) // assume keyfile and input provided
+    {
+        keyfile = fopen(argv[1], "r+b");
+        inputfile = fopen(argv[2], "rb");
+    }
+    else if(argc == 4) // assume keyfile, input and output file provided
+    {
+        keyfile = fopen(argv[1], "r+b");
+        inputfile = fopen(argv[2], "rb");
+        outputfile = fopen(argv[3], "wb");
+    }
+    else
+    {
+        describeUsage();
+        return 0;
+    }
+
+    data* message = readUntilEof(inputfile);
     data* key = readFileEnd("secret.key", message->length);
     data* result;
     if(key)
     {
-        printf("I have both plaintext and a key. Let the encrypting commence!\n");
-
         result = xorData(key, message);
     }
     else
     {
-        printf("The key is too short. Aborting!\n");
+        fprintf(stderr, "The key is too short. Aborting!\n");
     }
+
+    fwrite(&result->bytes, result->length, 1, outputfile);
+    fclose(keyfile);
+    fclose(inputfile);
+    fclose(outputfile);
+
+    free(message);
+    free(key);
+    free(result);
 
     return 0;
 }
