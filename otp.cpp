@@ -60,7 +60,6 @@ size_t fileSize(FILE* stream)
 data* readUntilEof(FILE* stream)
 {
     size_t toRead = 0;
-    bool dynamicSize = false;
     if(!isatty(fileno(stream)))
     {
         toRead = fileSize(stream);
@@ -68,7 +67,6 @@ data* readUntilEof(FILE* stream)
     else
     {
         toRead = CHUNKSIZE; // try with 1 KB to start with
-        dynamicSize = true;
     }
 
     data* result = allocateData(toRead);
@@ -95,18 +93,6 @@ data* readUntilEof(FILE* stream)
     return result;
 }
 
-data* readFile(const char* filename)
-{
-    size_t filesize = fileSize(filename);
-    data* result = allocateData(filesize, false);
-
-    FILE* handle = fopen(filename, "rb");
-    size_t bytes_read = fread(&result->bytes, 1, filesize, handle);
-    assert(bytes_read == filesize);
-
-    return result;
-}
-
 data* readFileEnd(FILE* stream, size_t size)
 {
     size_t filesize = fileSize(stream);
@@ -126,6 +112,19 @@ data* readFileEnd(FILE* stream, size_t size)
     {
         return 0;
     }
+}
+
+data* readKey(FILE* stream, size_t size)
+{
+    data* key = readFileEnd(stream, size);
+
+    if(key) // Make sure we get something back - means it needs to be truncated
+    {
+        int returnValue = ftruncate(fileno(stream), fileSize(stream) - size);
+        assert(returnValue != -1);
+    }
+
+    return key;
 }
 
 data* xorData(data* key, data* message, data* destination = 0)
@@ -181,26 +180,31 @@ int main(int argc, const char** argv)
     }
 
     data* message = readUntilEof(inputfile);
-    data* key = readFileEnd(keyfile, message->length);
+    data* key = readKey(keyfile, message->length);
     data* result;
+
+    int returnValue = 0;
+
     if(key)
     {
         result = xorData(key, message);
+        fwrite(&result->bytes, result->length, 1, outputfile);
+
+        free(result);
+        free(key);
     }
     else
     {
         fprintf(stderr, "The keyfile is too short. Aborting!\n");
+        returnValue = 1;
     }
 
-    fwrite(&result->bytes, result->length, 1, outputfile);
+    free(message);
+
     fclose(keyfile);
     fclose(inputfile);
     fclose(outputfile);
 
-    free(message);
-    free(key);
-    free(result);
-
-    return 0;
+    return returnValue;
 }
 
