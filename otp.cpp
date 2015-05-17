@@ -55,23 +55,7 @@ size_t fileSize(FILE* stream)
     }
 }
 
-size_t fileSize(const char* filename)
-{
-    struct stat buffer = {};
-    int result = stat(filename, &buffer);
-
-    if(result != -1)
-    {
-        return buffer.st_size;
-    }
-    else
-    {
-        assert(result != -1);
-        return -1;
-    }
-}
-
-#define CHUNKSIZE 8
+#define CHUNKSIZE 1024
 
 data* readUntilEof(FILE* stream)
 {
@@ -117,24 +101,23 @@ data* readFile(const char* filename)
     data* result = allocateData(filesize, false);
 
     FILE* handle = fopen(filename, "rb");
-    size_t bytes_read = fread(result->bytes, 1, filesize, handle);
+    size_t bytes_read = fread(&result->bytes, 1, filesize, handle);
     assert(bytes_read == filesize);
 
     return result;
 }
 
-data* readFileEnd(const char* filename, size_t size)
+data* readFileEnd(FILE* stream, size_t size)
 {
-    size_t filesize = fileSize(filename);
+    size_t filesize = fileSize(stream);
 
     if(filesize >= size)
     {
         data* result = allocateData(size, true);
 
-        FILE* handle = fopen(filename, "rb");
-        fseek(handle, -size, SEEK_END);
+        fseek(stream, -size, SEEK_END);
 
-        size_t bytes_read = fread(result->bytes, 1, size, handle);
+        size_t bytes_read = fread(&result->bytes, 1, size, stream);
         assert(bytes_read == size);
 
         return result;
@@ -198,7 +181,7 @@ int main(int argc, const char** argv)
     }
 
     data* message = readUntilEof(inputfile);
-    data* key = readFileEnd("secret.key", message->length);
+    data* key = readFileEnd(keyfile, message->length);
     data* result;
     if(key)
     {
@@ -206,7 +189,7 @@ int main(int argc, const char** argv)
     }
     else
     {
-        fprintf(stderr, "The key is too short. Aborting!\n");
+        fprintf(stderr, "The keyfile is too short. Aborting!\n");
     }
 
     fwrite(&result->bytes, result->length, 1, outputfile);
