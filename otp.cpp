@@ -134,12 +134,19 @@ data* xorData(data* key, data* message, data* destination = 0)
     {
         destination = allocateData(key->length);
     }
-
-    for(u64 i = 0;
-        i < key->length;
-        ++i)
+    
+    u64* destination_chunks = (u64*) &destination->bytes;
+    u64* key_chunks = (u64*) &key->bytes;
+    u64* message_chunks = (u64*) &message->bytes;
+    
+    u64 chunk_size = 8; // bytes
+    u64 chunk_count = (key->length + chunk_size - 1) / 8;
+    
+    for(u64 chunk_index = 0;
+        chunk_index < chunk_count;
+        ++chunk_index)
     {
-        destination->bytes[i] = key->bytes[i] ^ message->bytes[i];
+        *destination_chunks++ = *key_chunks++ ^ *message_chunks++;
     }
 
     return destination;
