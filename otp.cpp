@@ -154,7 +154,7 @@ void describeUsage()
 
 int main(int argc, char** argv)
 {
-    u64 truncate_key = 0;
+    bool truncate_key = 0;
     char c;
     
     while ((c = getopt(argc, argv, "+t")) != -1)
@@ -171,8 +171,6 @@ int main(int argc, char** argv)
     }
     
     u64 non_option_arg_count = argc - optind + 1;
-    
-    printf("%llu\n", non_option_arg_count);
     
     if(non_option_arg_count < 2)
     {
