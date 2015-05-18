@@ -1,21 +1,10 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-typedef uint8_t  u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-
-struct data
-{
-    u64 length;
-    u8 bytes[1]; // NOTE: this is supposed to be longer than 1 byte!
-};
+#include "types.h"
 
 data* allocateData(size_t size, bool clear = false)
 {
