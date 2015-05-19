@@ -116,6 +116,9 @@ data* padMessage(data* message)
 
 int main()
 {
+    data* message = allocateData(0);
+
+    message = padMessage(message);
 
     return 0;
 }
