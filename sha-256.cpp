@@ -75,10 +75,47 @@ u32 K[64] = {
     0x92722c85, 0x106aa070, 0x682e6ff3, 0xc67178f2
 };
 
+void writeLittleEndian(u64 value, u8* destinationEndPlusOne)
+{
+    auto nthLastByte = [](u64 value, int n)
+    {
+        assert(n < (signed int)sizeof(u64));
+        assert(n >= 0);
+        return (u8)((value >> (8 * n)) & 0xff);
+    };
+
+    int minusOffset = 0;
+    for(int offset = -1;
+        offset > -(int)sizeof(u64) - 1;
+        --offset)
+    {
+        destinationEndPlusOne[offset] = nthLastByte(value, minusOffset);
+        ++minusOffset;
+    }
+}
+
+// Padding:
+//                              ~~423~~ ~~~~~64~~~~
+// 01100001 01100010 01100011 1 00...00 00...011000
+//    a         b        c                    l=24
+//
+//             24           + 1 + 423   +    64 = 512
+data* padMessage(data* message)
+{
+    u64 unpaddedLength = message->length;
+    u64 unpaddedLengthMod512 = unpaddedLength % 512;
+
+    u64 paddedLength = unpaddedLength - unpaddedLengthMod512 + 512;
+    data* result = reallocateData(message, paddedLength, true);
+
+    result->bytes[unpaddedLength] = 0x80;
+    writeLittleEndian(unpaddedLength, (u8*)&result->bytes + paddedLength);
+
+    return result;
+}
+
 int main()
 {
-    rotl(-8,  0xff000000);
-    rotr(-16, 0x00000fff);
 
     return 0;
 }
