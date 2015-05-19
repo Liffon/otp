@@ -6,26 +6,6 @@
 #include <unistd.h>
 #include "types.h"
 
-data* allocateData(size_t size, bool clear = false)
-{
-    data* result = (data*)malloc(sizeof(u64) + size);
-    result->length = size;
-
-    u8* bytes = (u8*)&result->bytes;
-
-    if(clear)
-    {
-        for(u64 i = 0;
-            i < size;
-            ++i)
-        {
-            bytes[i] = 0;
-        }
-    }
-
-    return result;
-}
-
 size_t fileSize(FILE* stream)
 {
     assert(!isatty(fileno(stream)));

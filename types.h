@@ -13,5 +13,23 @@ struct data
     u8 bytes[1]; // NOTE: this is supposed to be longer than 1 byte!
 };
 
+data* allocateData(size_t length, bool clear = false)
+{
+    data* result = (data*)malloc(sizeof(u64) + length);
+    result->length = length;
+
+    if(clear)
+    {
+        for(u64 i = 0;
+            i < length;
+            ++i)
+        {
+            result->bytes[i] = 0;
+        }
+    }
+
+    return result;
+}
+
 #define TYPES_H
 #endif
