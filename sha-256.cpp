@@ -57,7 +57,7 @@ u32 smallSigma1(u32 x)
     return result;
 }
 
-u32 K[64] = {
+const u32 K[64] = {
     0x428a2f98, 0xd807aa98, 0xe49b69c1, 0x983e5152,
     0x27b70a85, 0xa2bfe8a1, 0x19a4c116, 0x748f82ee,
     0x71374491, 0x12835b01, 0xefbe4786, 0xa831c66d,
@@ -123,45 +123,99 @@ struct sha256block
 {
     u32 word[16];
 };
-
-sha256value* initializeHashValue(sha256value* H)
+struct messageSchedule
 {
-    if(H)
-    {
-        H->word[0] = 0x6a09e667;
-        H->word[1] = 0xbb67ae85;
-        H->word[2] = 0x3c6ef372;
-        H->word[3] = 0xa54ff53a;
-        H->word[4] = 0x510e527f;
-        H->word[5] = 0x9b05688c;
-        H->word[6] = 0x1f83d9ab;
-        H->word[7] = 0x5be0cd19;
-    }
+    u32 word[64];
+};
 
-    return(H);
-}
-
-sha256value* sha256(data* message)
+const u32 H0[8] =
 {
-    sha256value* H = new sha256value();
-    if(initializeHashValue(H))
-    {
-        data* paddedMessage = allocateData(message->length);
-        assert(memcpy(paddedMessage, message, message->length + sizeof(u64)));
+    0x6a09e667, 0xbb67ae85,
+    0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c,
+    0x1f83d9ab, 0x5be0cd19
+};
 
-        paddedMessage = padMessage(paddedMessage);
-    }
-    else
+sha256value sha256(data* message)
+{
+    sha256value H;
+    assert(memcpy(H.word, H0, sizeof(u32)*8));
+
+    data* paddedMessage = allocateData(message->length);
+    assert(memcpy(paddedMessage, message, message->length + sizeof(u64)));
+
+    paddedMessage = padMessage(paddedMessage);
+
+    u32 numberOfMessageBlocks = paddedMessage->length/512;
+    messageSchedule W;
+    u32 a, b, c, d, e, f, g, h;
+
+    for(u32 blockNumber = 0;
+        blockNumber < numberOfMessageBlocks;
+        ++blockNumber)
     {
-        return 0;
+        sha256block currentBlock =
+            ((sha256block*)paddedMessage->bytes) [blockNumber];
+
+        // Prepare message schedule
+        for(u8 t = 0;
+            t < 16;
+            ++t)
+        {
+            W.word[t] = currentBlock.word[t];
+        }
+        for(u8 t = 16;
+            t < 64;
+            ++t)
+        {
+            W.word[t] = smallSigma1(W.word[t-2]) + W.word[t-7] +
+                        smallSigma0(W.word[t-15]) + W.word[t-16];
+        }
+
+        // Initialize working variables
+        a = H.word[0];
+        b = H.word[1];
+        c = H.word[2];
+        d = H.word[3];
+        e = H.word[4];
+        f = H.word[5];
+        g = H.word[6];
+        h = H.word[7];
+
+        for(u8 t = 0;
+            t < 64;
+            ++t)
+        {
+            u32 T1 = h + bigSigma1(e) + ch(e, f, g) + K[t] + W.word[t];
+            u32 T2 = bigSigma0(a) + maj(a, b, c);
+            h = g;
+            g = f;
+            f = e;
+            e = d + T1;
+            d = c;
+            c = b;
+            b = a;
+            a = T1 + T2;
+        }
+
+        H.word[0] += a;
+        H.word[1] += b;
+        H.word[2] += c;
+        H.word[3] += d;
+        H.word[4] += e;
+        H.word[5] += f;
+        H.word[6] += g;
+        H.word[7] += h;
     }
+
+    free(paddedMessage);
 
     return H;
 }
 
 int main()
 {
-    data* message = allocateData(520);
+    data* message = allocateData(0);
     for(u64 i = 0;
         i < message->length;
         ++i)
@@ -169,11 +223,7 @@ int main()
         message->bytes[i] = i % 17;
     }
 
-    sha256value* result = sha256(message);
-    if(result)
-    {
-        delete(result);
-    }
+    sha256value result = sha256(message);
 
     free(message);
 
