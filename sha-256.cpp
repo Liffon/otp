@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <assert.h>
+#include <string.h>
 #include "types.h"
 
 u32 rotl(int n, u32 x)
@@ -145,8 +146,10 @@ sha256value* sha256(data* message)
     sha256value* H = new sha256value();
     if(initializeHashValue(H))
     {
-        // TODO: make a copy before padding
-        message = padMessage(message);
+        data* paddedMessage = allocateData(message->length);
+        assert(memcpy(paddedMessage, message, message->length + sizeof(u64)));
+
+        paddedMessage = padMessage(paddedMessage);
     }
     else
     {
