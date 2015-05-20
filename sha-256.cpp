@@ -114,11 +114,65 @@ data* padMessage(data* message)
     return result;
 }
 
+struct sha256value
+{
+    u32 word[8];
+};
+struct sha256block
+{
+    u32 word[16];
+};
+
+sha256value* initializeHashValue(sha256value* H)
+{
+    if(H)
+    {
+        H->word[0] = 0x6a09e667;
+        H->word[1] = 0xbb67ae85;
+        H->word[2] = 0x3c6ef372;
+        H->word[3] = 0xa54ff53a;
+        H->word[4] = 0x510e527f;
+        H->word[5] = 0x9b05688c;
+        H->word[6] = 0x1f83d9ab;
+        H->word[7] = 0x5be0cd19;
+    }
+
+    return(H);
+}
+
+sha256value* sha256(data* message)
+{
+    sha256value* H = new sha256value();
+    if(initializeHashValue(H))
+    {
+        // TODO: make a copy before padding
+        message = padMessage(message);
+    }
+    else
+    {
+        return 0;
+    }
+
+    return H;
+}
+
 int main()
 {
-    data* message = allocateData(0);
+    data* message = allocateData(520);
+    for(u64 i = 0;
+        i < message->length;
+        ++i)
+    {
+        message->bytes[i] = i % 17;
+    }
 
-    message = padMessage(message);
+    sha256value* result = sha256(message);
+    if(result)
+    {
+        delete(result);
+    }
+
+    free(message);
 
     return 0;
 }
