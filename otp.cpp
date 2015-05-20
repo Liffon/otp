@@ -135,12 +135,15 @@ data* xorData(data* key, data* message, data* destination = 0)
         destination = allocateData(key->length);
     }
     
+    // Pontus: the following assumes the data is allocated in chunks divisible by chunk_size
+    // otherwise would need an ugly second loop
+    
     u64* destination_chunks = (u64*) &destination->bytes;
     u64* key_chunks = (u64*) &key->bytes;
     u64* message_chunks = (u64*) &message->bytes;
     
     u64 chunk_size = 8; // bytes
-    u64 chunk_count = (key->length + chunk_size - 1) / 8;
+    u64 chunk_count = (key->length + chunk_size - 1) / chunk_size;
     
     for(u64 chunk_index = 0;
         chunk_index < chunk_count;
