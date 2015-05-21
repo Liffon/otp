@@ -1,41 +1,10 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-typedef uint8_t  u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-
-struct data
-{
-    u64 length;
-    u8 bytes[1]; // NOTE: this is supposed to be longer than 1 byte!
-};
-
-data* allocateData(size_t size, bool clear = false)
-{
-    data* result = (data*)malloc(sizeof(u64) + size);
-    result->length = size;
-
-    u8* bytes = (u8*)&result->bytes;
-
-    if(clear)
-    {
-        for(u64 i = 0;
-            i < size;
-            ++i)
-        {
-            bytes[i] = 0;
-        }
-    }
-
-    return result;
-}
+#include "types.h"
 
 size_t fileSize(FILE* stream)
 {
@@ -114,11 +83,11 @@ data* readFileEnd(FILE* stream, size_t size)
     }
 }
 
-data* readKey(FILE* stream, size_t size)
+data* readKey(FILE* stream, size_t size, bool truncate_key = true)
 {
     data* key = readFileEnd(stream, size);
 
-    if(key) // Make sure we get something back - means it needs to be truncated
+    if(key && truncate_key)
     {
         int returnValue = ftruncate(fileno(stream), fileSize(stream) - size);
         assert(returnValue != -1);
@@ -152,35 +121,51 @@ void describeUsage()
     printf("to the inputfile.\n");
 }
 
-int main(int argc, const char** argv)
+int main(int argc, char** argv)
 {
-    FILE* keyfile = 0;
-    FILE* inputfile = stdin;
-    FILE* outputfile = stdout;
-
-    if(argc == 2) // assume only keyfile provided
+    bool truncate_key = 0;
+    char c;
+    
+    while ((c = getopt(argc, argv, "+t")) != -1)
     {
-        keyfile = fopen(argv[1], "r+b");
+        switch (c)
+        {
+            case 't':
+                truncate_key = 1;
+                break;
+            default:
+                assert(false);
+                break;
+        }
     }
-    else if(argc == 3) // assume keyfile and input provided
-    {
-        keyfile = fopen(argv[1], "r+b");
-        inputfile = fopen(argv[2], "rb");
-    }
-    else if(argc == 4) // assume keyfile, input and output file provided
-    {
-        keyfile = fopen(argv[1], "r+b");
-        inputfile = fopen(argv[2], "rb");
-        outputfile = fopen(argv[3], "wb");
-    }
-    else
+    
+    u64 non_option_arg_count = argc - optind + 1;
+    
+    if(non_option_arg_count < 2)
     {
         describeUsage();
         return 0;
     }
+    
+    FILE* keyfile = 0;
+    FILE* inputfile = stdin;
+    FILE* outputfile = stdout;
+
+    if(non_option_arg_count >= 2)
+    {
+        keyfile = fopen(argv[optind], "r+b");
+    }
+    if(non_option_arg_count >= 3)
+    {
+        inputfile = fopen(argv[optind + 1], "rb");
+    }
+    if(non_option_arg_count >= 4)
+    {
+        outputfile = fopen(argv[optind + 2], "wb");
+    }
 
     data* message = readUntilEof(inputfile);
-    data* key = readKey(keyfile, message->length);
+    data* key = readKey(keyfile, message->length, truncate_key);
     data* result;
 
     int returnValue = 0;
