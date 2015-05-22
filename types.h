@@ -14,37 +14,44 @@ struct data
     u8 bytes[1]; // NOTE: this is supposed to be longer than 1 byte!
 };
 
+inline
+u64 ceilingDivide(u64 numerator, u64 denominator)
+{
+    return ((numerator - 1)/denominator + 1);
+}
+
 data* allocateData(u64 length, bool clear = false)
 {
-    data* result = (data*)malloc(sizeof(u64) + length);
-    result->length = length;
-
+    u64 longAlignedLength = ceilingDivide(length, 8) * 8;
+    data* result;
     if(clear)
     {
-        for(u64 i = 0;
-            i < length;
-            ++i)
-        {
-            result->bytes[i] = 0;
-        }
+        result = (data*)calloc(1, sizeof(u64) + longAlignedLength);
     }
-
+    else
+    {
+        result = (data*)malloc(sizeof(u64) + longAlignedLength);
+    }
+    result->length = length;
     return result;
 }
 
 data* reallocateData(data* oldData, u64 newLength, bool clear = false)
 {
+    u64 chunkCount = ceilingDivide(newLength, 8);
+    u64 newLongAlignedLength = chunkCount * 8;
     u64 oldLength = oldData->length;
-    data* result = (data*)realloc(oldData, sizeof(u64) + newLength);
+    data* result = (data*)realloc(oldData, sizeof(u64) + newLongAlignedLength);
     result->length = newLength;
 
     if(clear && (newLength > oldLength))
     {
-        for(u64 i = oldLength;
-            i < newLength;
-            ++i)
+        u64* byteChunks = (u64*) &result->bytes;
+        for(u64 chunkIndex = ceilingDivide(oldLength, 8);
+            chunkIndex < chunkCount;
+            ++chunkIndex)
         {
-            result->bytes[i] = 0;
+            *(byteChunks + chunkIndex) = 0;
         }
     }
 
