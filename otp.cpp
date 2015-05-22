@@ -49,7 +49,7 @@ data* readUntilEof(FILE* stream)
 
         if(bytes_read_in_chunk == CHUNKSIZE && !feof(stream)) // needs more size!
         {
-            result = (data*)realloc(result, sizeof(u64) + bytes_read + CHUNKSIZE);
+            result = reallocateData(result, sizeof(u64) + bytes_read + CHUNKSIZE);
         }
         else if(ferror(stream))
         {
@@ -58,7 +58,11 @@ data* readUntilEof(FILE* stream)
         }
     }
 
+    // We need this line, otherwise the message will contain gibberish
+    // (or null bytes) at the end unless read from a file
+    // since result->length is set to multiples of CHUNKSIZE in reallocateData
     result->length = bytes_read;
+
     return result;
 }
 
@@ -103,12 +107,21 @@ data* xorData(data* key, data* message, data* destination = 0)
     {
         destination = allocateData(key->length);
     }
-
-    for(u64 i = 0;
-        i < key->length;
-        ++i)
+    
+    // Pontus: the following assumes the data is allocated in chunks divisible by chunk_size
+    
+    u64* destination_chunks = (u64*) &destination->bytes;
+    u64* key_chunks = (u64*) &key->bytes;
+    u64* message_chunks = (u64*) &message->bytes;
+    
+    u64 chunk_size = 8; // bytes
+    u64 chunk_count = ceilingDivide(key->length, chunk_size);
+    
+    for(u64 chunk_index = 0;
+        chunk_index < chunk_count;
+        ++chunk_index)
     {
-        destination->bytes[i] = key->bytes[i] ^ message->bytes[i];
+        *destination_chunks++ = *key_chunks++ ^ *message_chunks++;
     }
 
     return destination;
