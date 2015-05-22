@@ -58,6 +58,11 @@ data* readUntilEof(FILE* stream)
         }
     }
 
+    // We need this line, otherwise the message will contain gibberish
+    // (or null bytes) at the end unless read from a file
+    // since result->length is set to multiples of CHUNKSIZE in reallocateData
+    result->length = bytes_read;
+
     return result;
 }
 
