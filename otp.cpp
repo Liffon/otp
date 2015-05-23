@@ -114,10 +114,10 @@ data* xorData(data* key, data* message, data* destination = 0)
     u64* key_chunks = (u64*) &key->bytes;
     u64* message_chunks = (u64*) &message->bytes;
     
-    u64 chunk_size = 8; // bytes
-    u64 chunk_count = ceilingDivide(key->length, chunk_size);
+    i64 chunk_size = 8; // bytes
+    i64 chunk_count = ceilingDivide(key->length, chunk_size);
     
-    for(u64 chunk_index = 0;
+    for(i64 chunk_index = 0;
         chunk_index < chunk_count;
         ++chunk_index)
     {
