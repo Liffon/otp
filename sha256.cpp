@@ -69,25 +69,6 @@ const u32 K[64] = {
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-void writeBigEndian(u64 value, u8* destinationEndPlusOne)
-{
-    auto nthLastByte = [](u64 value, int n)
-    {
-        assert(n < (signed int)sizeof(u64));
-        assert(n >= 0);
-        return (u8)((value >> (8 * n)) & 0xff);
-    };
-
-    int minusOffset = 0;
-    for(int offset = -1;
-        offset > -(int)sizeof(u64) - 1;
-        --offset)
-    {
-        destinationEndPlusOne[offset] = nthLastByte(value, minusOffset);
-        ++minusOffset;
-    }
-}
-
 // Padding:
 //                              ~~423~~ ~~~~~64~~~~
 // 01100001 01100010 01100011 1 00...00 00...011000
@@ -109,19 +90,6 @@ data* padMessage(data* message)
     return result;
 }
 
-struct sha256value
-{
-    u32 word[8];
-};
-struct sha256block
-{
-    u32 word[16];
-};
-struct messageSchedule
-{
-    u32 word[64];
-};
-
 const u32 H0[8] =
 {
     0x6a09e667, 0xbb67ae85,
@@ -129,15 +97,6 @@ const u32 H0[8] =
     0x510e527f, 0x9b05688c,
     0x1f83d9ab, 0x5be0cd19
 };
-
-u32 readBigEndian(u32* wordAddress)
-{
-    u8* byteAddress = (u8*)wordAddress;
-    u32 result = (byteAddress[0] << 24) | (byteAddress[1] << 16)
-               | (byteAddress[2] << 8)  | (byteAddress[3]);
-
-    return result;
-}
 
 sha256value sha256(data* message)
 {

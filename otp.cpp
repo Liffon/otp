@@ -101,33 +101,6 @@ data* readKey(FILE* stream, size_t size, bool truncate_key = true)
     return key;
 }
 
-data* xorData(data* key, data* message, data* destination = 0)
-{
-    assert(key->length == message->length);
-    if(!destination)
-    {
-        destination = allocateData(key->length);
-    }
-    
-    // Pontus: the following assumes the data is allocated in chunks divisible by chunk_size
-    
-    u64* destination_chunks = (u64*) &destination->bytes;
-    u64* key_chunks = (u64*) &key->bytes;
-    u64* message_chunks = (u64*) &message->bytes;
-    
-    i64 chunk_size = 8; // bytes
-    i64 chunk_count = ceilingDivide(key->length, chunk_size);
-    
-    for(i64 chunk_index = 0;
-        chunk_index < chunk_count;
-        ++chunk_index)
-    {
-        *destination_chunks++ = *key_chunks++ ^ *message_chunks++;
-    }
-
-    return destination;
-}
-
 void describeUsage()
 {
     printf("Usage: otp <keyfile> [inputfile [outputfile]]\n\n");
