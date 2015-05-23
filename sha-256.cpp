@@ -216,45 +216,19 @@ sha256value sha256(data* message)
     return H;
 }
 
-void printSha256ValueAsHex(sha256value* value)
+void printSha256ValueAsHex(sha256value* value, FILE* stream = stdout)
 {
     for(u64 i = 0;
         i < 8;
         ++i)
     {
-        printf("%x", value->word[i]);
+        fprintf(stream, "%x", value->word[i]);
     }
 }
 
-int main()
+inline
+void printSha256ValueAsHex(data* data, FILE* stream = stdout)
 {
-    data* message = allocateData(0);
-
-    sha256value result = sha256(message);
-
-    printSha256ValueAsHex(&result);
-    printf("\n");
-
-    message = reallocateData(message, 2);
-    message->bytes[0] = 'a';
-    message->bytes[1] = 'b';
-
-    result = sha256(message);
-
-    printSha256ValueAsHex(&result);
-    printf("\n");
-
-    message = reallocateData(message, 3);
-    message->bytes[0] = '1';
-    message->bytes[1] = '2';
-    message->bytes[2] = '3';
-
-    result = sha256(message);
-
-    printSha256ValueAsHex(&result);
-    printf("\n");
-
-    free(message);
-
-    return 0;
+    sha256value value = sha256(data);
+    printSha256ValueAsHex(&value, stream);
 }

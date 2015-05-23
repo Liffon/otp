@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "types.h"
+#include "sha-256.cpp"
 
 size_t fileSize(FILE* stream)
 {
@@ -182,6 +183,10 @@ int main(int argc, char** argv)
     data* result;
 
     int returnValue = 0;
+
+    fprintf(stderr, "sha256: ");
+    printSha256ValueAsHex(message, stderr);
+    fprintf(stderr, "\n");
 
     if(key)
     {
