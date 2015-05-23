@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "types.h"
-#include "sha-256.cpp"
+#include "sha256.cpp"
 
 size_t fileSize(FILE* stream)
 {
