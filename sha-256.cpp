@@ -1,3 +1,4 @@
+#include <stdio.h> // for debugging
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
@@ -215,17 +216,43 @@ sha256value sha256(data* message)
     return H;
 }
 
+void printSha256ValueAsHex(sha256value* value)
+{
+    for(u64 i = 0;
+        i < 8;
+        ++i)
+    {
+        printf("%x", value->word[i]);
+    }
+}
+
 int main()
 {
     data* message = allocateData(0);
-    for(u64 i = 0;
-        i < message->length;
-        ++i)
-    {
-        message->bytes[i] = i % 17;
-    }
 
     sha256value result = sha256(message);
+
+    printSha256ValueAsHex(&result);
+    printf("\n");
+
+    message = reallocateData(message, 2);
+    message->bytes[0] = 'a';
+    message->bytes[1] = 'b';
+
+    result = sha256(message);
+
+    printSha256ValueAsHex(&result);
+    printf("\n");
+
+    message = reallocateData(message, 3);
+    message->bytes[0] = '1';
+    message->bytes[1] = '2';
+    message->bytes[2] = '3';
+
+    result = sha256(message);
+
+    printSha256ValueAsHex(&result);
+    printf("\n");
 
     free(message);
 
