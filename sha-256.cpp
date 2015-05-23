@@ -68,7 +68,7 @@ const u32 K[64] = {
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-void writeLittleEndian(u64 value, u8* destinationEndPlusOne)
+void writeBigEndian(u64 value, u8* destinationEndPlusOne)
 {
     auto nthLastByte = [](u64 value, int n)
     {
@@ -96,13 +96,14 @@ void writeLittleEndian(u64 value, u8* destinationEndPlusOne)
 data* padMessage(data* message)
 {
     u64 unpaddedLength = message->length;
-    u64 unpaddedLengthMod512 = unpaddedLength % 512;
+    u64 unpaddedLengthMod64 = unpaddedLength % 64;
 
-    u64 paddedLength = unpaddedLength - unpaddedLengthMod512 + 512;
+    u64 paddedLength = unpaddedLength - unpaddedLengthMod64 + 64;
     data* result = reallocateData(message, paddedLength, true);
 
     result->bytes[unpaddedLength] = 0x80;
-    writeLittleEndian(unpaddedLength * 8, (u8*)&result->bytes + paddedLength);
+    // Write length in _bits_
+    writeBigEndian(unpaddedLength * 8, (u8*)&result->bytes + paddedLength);
 
     return result;
 }
@@ -128,6 +129,15 @@ const u32 H0[8] =
     0x1f83d9ab, 0x5be0cd19
 };
 
+u32 readBigEndian(u32* wordAddress)
+{
+    u8* byteAddress = (u8*)wordAddress;
+    u32 result = (byteAddress[0] << 24) | (byteAddress[1] << 16)
+               | (byteAddress[2] << 8)  | (byteAddress[3]);
+
+    return result;
+}
+
 sha256value sha256(data* message)
 {
     sha256value H;
@@ -138,7 +148,7 @@ sha256value sha256(data* message)
 
     paddedMessage = padMessage(paddedMessage);
 
-    u32 numberOfMessageBlocks = paddedMessage->length/512;
+    u32 numberOfMessageBlocks = paddedMessage->length/64;
     messageSchedule W;
     u32 a, b, c, d, e, f, g, h;
 
@@ -154,7 +164,7 @@ sha256value sha256(data* message)
             t < 16;
             ++t)
         {
-            W.word[t] = currentBlock.word[t];
+            W.word[t] = readBigEndian((u32*) &currentBlock.word + t);
         }
         for(u8 t = 16;
             t < 64;
