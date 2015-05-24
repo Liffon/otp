@@ -85,7 +85,7 @@ data* padMessage(data* message)
 
     result->bytes[unpaddedLength] = 0x80;
     // Write length in _bits_
-    writeBigEndian(unpaddedLength * 8, (u8*)&result->bytes + paddedLength);
+    writeBigEndian(unpaddedLength * 8, (u8*)&result->bytes + paddedLength - sizeof(u64));
 
     return result;
 }

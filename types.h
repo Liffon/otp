@@ -48,31 +48,21 @@ u32 readBigEndian(u32* wordAddress)
     return result;
 }
 
-void writeBigEndian(u64 value, u8* destinationEndPlusOne)
-{
-    auto nthLastByte = [](u64 value, int n)
-    {
-        assert(n < (signed int)sizeof(u64));
-        assert(n >= 0);
-        return (u8)((value >> (8 * n)) & 0xff);
-    };
-
-    int minusOffset = 0;
-    for(int offset = -1;
-        offset > -(int)sizeof(u64) - 1;
-        --offset)
-    {
-        destinationEndPlusOne[offset] = nthLastByte(value, minusOffset);
-        ++minusOffset;
-    }
-}
-
 void writeBigEndian(u32 value, u8* destination)
 {
     *destination++ = (u8)(value >> 24);
     *destination++ = (u8)((value >> 16) & 0xff);
     *destination++ = (u8)((value >> 8) & 0xff);
     *destination = (u8)((value) & 0xff);
+}
+
+void writeBigEndian(u64 value, u8* destination)
+{
+    u32 mostSignificantWord = (value >> 32) & 0xffffffff;
+    u32 leastSignificantWord = value & 0xffffffff;
+
+    writeBigEndian(mostSignificantWord, destination);
+    writeBigEndian(leastSignificantWord, destination + 4);
 }
 
 data* allocateData(u64 length, bool clear = false)
