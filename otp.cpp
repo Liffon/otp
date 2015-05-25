@@ -121,14 +121,14 @@ int main(int argc, char** argv)
                 truncate_key = 1;
                 break;
             default:
-                assert(false);
-                break;
+                describeUsage();
+                return 0;
         }
     }
     
-    u64 non_option_arg_count = argc - optind + 1;
+    u64 non_option_arg_count = argc - optind;
     
-    if(non_option_arg_count < 2)
+    if(non_option_arg_count < 1)
     {
         describeUsage();
         return 0;
@@ -138,15 +138,15 @@ int main(int argc, char** argv)
     FILE* inputfile = stdin;
     FILE* outputfile = stdout;
 
-    if(non_option_arg_count >= 2)
+    if(non_option_arg_count >= 1)
     {
         keyfile = fopen(argv[optind], "r+b");
     }
-    if(non_option_arg_count >= 3)
+    if(non_option_arg_count >= 2)
     {
         inputfile = fopen(argv[optind + 1], "rb");
     }
-    if(non_option_arg_count >= 4)
+    if(non_option_arg_count >= 3)
     {
         outputfile = fopen(argv[optind + 2], "wb");
     }
