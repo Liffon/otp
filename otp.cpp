@@ -103,9 +103,9 @@ data* readKey(FILE* stream, size_t size, bool truncate_key = true)
 
 void describeUsage()
 {
-    printf("Usage: otp <keyfile> [inputfile [outputfile]]\n\n");
+    printf("usage: otp [-t] <keyfile> [<inputfile> [<outputfile>]\n\n");
     printf("Data will be removed from the keyfile equal in length\n");
-    printf("to the inputfile.\n");
+    printf("to the inputfile if the option -t is provided.\n");
 }
 
 int main(int argc, char** argv)
