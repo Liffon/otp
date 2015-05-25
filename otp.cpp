@@ -129,9 +129,9 @@ data* xorData(data* key, data* message, data* destination = 0)
 
 void describeUsage()
 {
-    printf("Usage: otp <keyfile> [inputfile [outputfile]]\n\n");
+    printf("usage: otp [-t] <keyfile> [<inputfile> [<outputfile>]\n\n");
     printf("Data will be removed from the keyfile equal in length\n");
-    printf("to the inputfile.\n");
+    printf("to the inputfile if the option -t is provided.\n");
 }
 
 int main(int argc, char** argv)
